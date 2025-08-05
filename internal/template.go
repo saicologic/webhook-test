@@ -57,13 +57,33 @@ const indexTemplate = `<!DOCTYPE html>
     </style>
     <script>
         const basePath = window.location.pathname.includes('/api') ? '/api' : '';
+        
+        // Server-Sent Events接続
         const eventSource = new EventSource(basePath + '/events');
+        
+        eventSource.onopen = function(event) {
+            console.log('SSE connection opened');
+        };
+        
         eventSource.onmessage = function(event) {
+            console.log('Received message:', event.data);
             document.querySelector('.message').textContent = event.data;
         };
+        
         eventSource.onerror = function(event) {
             console.log('SSE connection error:', event);
+            // Vercelで接続が失敗した場合のフォールバック
+            setTimeout(() => {
+                console.log('Attempting to reconnect SSE...');
+                eventSource.close();
+                location.reload();
+            }, 5000);
         };
+        
+        // ページ離脱時に接続を閉じる
+        window.addEventListener('beforeunload', function() {
+            eventSource.close();
+        });
     </script>
 </head>
 <body>
