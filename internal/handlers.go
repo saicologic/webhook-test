@@ -35,7 +35,6 @@ func SSEHandler(c echo.Context) error {
 	w.Header().Set("Cache-Control", "no-cache")
 	w.Header().Set("Connection", "keep-alive")
 	w.Header().Set("Access-Control-Allow-Origin", "*")
-	w.Header().Set("Transfer-Encoding", "chunked")
 
 	clientChan := make(chan string, 10)
 
@@ -56,20 +55,13 @@ func SSEHandler(c echo.Context) error {
 
 	// 初期メッセージ送信
 	fmt.Fprintf(w, "data: %s\n\n", currentMessage)
-	
-	// Vercel用: http.Flusherが使えない場合の対処
-	if flusher, ok := w.(http.Flusher); ok {
-		flusher.Flush()
-	}
+	w.Flush()
 
 	for {
 		select {
 		case msg := <-clientChan:
 			fmt.Fprintf(w, "data: %s\n\n", msg)
-			// Vercel用: http.Flusherが使えない場合の対処
-			if flusher, ok := w.(http.Flusher); ok {
-				flusher.Flush()
-			}
+			w.Flush()
 		case <-c.Request().Context().Done():
 			return nil
 		}
