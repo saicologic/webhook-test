@@ -1,10 +1,5 @@
 {
   "version": 2,
-  "functions": {
-    "api/handler.go": {
-      "runtime": "@vercel/go"
-    }
-  },
   "rewrites": [
     {
       "source": "/",
