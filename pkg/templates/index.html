@@ -41,13 +41,73 @@
     </style>
     <script>
         const basePath = window.location.pathname.includes('/api') ? '/api' : '';
-        const eventSource = new EventSource(basePath + '/events');
-        eventSource.onmessage = function(event) {
-            document.querySelector('.message').textContent = event.data;
-        };
-        eventSource.onerror = function(event) {
-            console.log('SSE connection error:', event);
-        };
+        let eventSource;
+        let reconnectAttempts = 0;
+        const maxReconnectAttempts = 5;
+        let reconnectTimer;
+
+        function connectSSE() {
+            if (eventSource) {
+                eventSource.close();
+            }
+            
+            eventSource = new EventSource(basePath + '/events');
+            
+            eventSource.onopen = function(event) {
+                console.log('SSE connection established');
+                reconnectAttempts = 0;
+                if (reconnectTimer) {
+                    clearTimeout(reconnectTimer);
+                    reconnectTimer = null;
+                }
+            };
+            
+            eventSource.onmessage = function(event) {
+                // メッセージを受信した時のみ更新（webhookからのメッセージ）
+                document.querySelector('.message').textContent = event.data;
+            };
+            
+            eventSource.onerror = function(event) {
+                if (eventSource.readyState === EventSource.CLOSED) {
+                    console.log('SSE connection closed by server');
+                } else {
+                    console.log('SSE connection error');
+                }
+                
+                eventSource.close();
+                
+                // 再接続の試行（メッセージは保持したまま）
+                if (reconnectAttempts < maxReconnectAttempts) {
+                    reconnectAttempts++;
+                    const delay = Math.min(1000 * Math.pow(2, reconnectAttempts - 1), 30000); // 最大30秒
+                    console.log(`SSE reconnect in ${delay}ms (attempt ${reconnectAttempts}/${maxReconnectAttempts})`);
+                    
+                    reconnectTimer = setTimeout(connectSSE, delay);
+                } else {
+                    console.log('SSE max reconnection attempts reached');
+                }
+            };
+        }
+
+        // 初回接続
+        connectSSE();
+        
+        // ページ離脱時にクリーンアップ
+        window.addEventListener('beforeunload', function() {
+            if (eventSource) {
+                eventSource.close();
+            }
+            if (reconnectTimer) {
+                clearTimeout(reconnectTimer);
+            }
+        });
+        
+        // ページが再表示された時の処理
+        window.addEventListener('pageshow', function(event) {
+            if (event.persisted && (!eventSource || eventSource.readyState === EventSource.CLOSED)) {
+                connectSSE();
+            }
+        });
     </script>
 </head>
 <body>

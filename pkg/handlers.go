@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"net/http"
 	"sync"
+	"time"
 
 	"github.com/labstack/echo/v4"
 )
@@ -46,6 +47,7 @@ func SSEHandler(c echo.Context) error {
 	w.Header().Set("Cache-Control", "no-cache")
 	w.Header().Set("Connection", "keep-alive")
 	w.Header().Set("Access-Control-Allow-Origin", "*")
+	w.Header().Set("X-Accel-Buffering", "no") // Nginxのバッファリング無効化
 
 	clientChan := make(chan string, 10)
 
@@ -68,10 +70,18 @@ func SSEHandler(c echo.Context) error {
 	fmt.Fprintf(w, "data: %s\n\n", currentMessage)
 	w.Flush()
 
+	// keepalive用のticker（30秒間隔）
+	ticker := time.NewTicker(30 * time.Second)
+	defer ticker.Stop()
+
 	for {
 		select {
 		case msg := <-clientChan:
 			fmt.Fprintf(w, "data: %s\n\n", msg)
+			w.Flush()
+		case <-ticker.C:
+			// keepalive ping（クライアントには表示されない）
+			fmt.Fprintf(w, ": keepalive\n\n")
 			w.Flush()
 		case <-c.Request().Context().Done():
 			return nil
@@ -80,16 +90,26 @@ func SSEHandler(c echo.Context) error {
 }
 
 func BroadcastMessage(msg string) {
-	clientsMu.RLock()
-	defer clientsMu.RUnlock()
+	clientsMu.Lock()
+	defer clientsMu.Unlock()
+
+	// 切断されたクライアントを削除するためのスライス
+	var toDelete []chan string
 
 	for client := range clients {
 		select {
 		case client <- msg:
+			// メッセージ送信成功
 		default:
-			close(client)
-			delete(clients, client)
+			// チャンネルがブロックされている場合は切断されたクライアント
+			toDelete = append(toDelete, client)
 		}
+	}
+
+	// 切断されたクライアントを削除
+	for _, client := range toDelete {
+		delete(clients, client)
+		close(client)
 	}
 }
 
