@@ -17,6 +17,25 @@ var (
 	clientsMu sync.RWMutex
 )
 
+func main() {
+	port := os.Getenv("PORT")
+	if port == "" {
+		port = "3000"
+	}
+
+	e := echo.New()
+
+	e.Use(middleware.Logger())
+	e.Use(middleware.Recover())
+	e.Use(middleware.CORS())
+
+	e.GET("/", getStatus)
+	e.GET("/events", sseHandler)
+	e.POST("/webhook", webhook)
+
+	e.Logger.Fatal(e.Start(":" + port))
+}
+
 func getStatus(c echo.Context) error {
 	mu.RLock()
 	currentMessage := message
@@ -159,23 +178,4 @@ func webhook(c echo.Context) error {
 		"status":  "success",
 		"message": "Message updated",
 	})
-}
-
-func main() {
-	port := os.Getenv("PORT")
-	if port == "" {
-		port = "3000"
-	}
-
-	e := echo.New()
-
-	e.Use(middleware.Logger())
-	e.Use(middleware.Recover())
-	e.Use(middleware.CORS())
-
-	e.GET("/", getStatus)
-	e.GET("/events", sseHandler)
-	e.POST("/webhook", webhook)
-
-	e.Logger.Fatal(e.Start(":" + port))
 }

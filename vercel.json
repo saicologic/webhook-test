@@ -1,17 +1,15 @@
 {
   "version": 2,
-  "rewrites": [
+  "builds": [
     {
-      "source": "/",
-      "destination": "/api/handler"
-    },
+      "src": "api/handler.go",
+      "use": "@vercel/go"
+    }
+  ],
+  "routes": [
     {
-      "source": "/events",
-      "destination": "/api/handler/events"
-    },
-    {
-      "source": "/webhook",
-      "destination": "/api/handler/webhook"
+      "src": "/(.*)",
+      "dest": "/api/handler.go"
     }
   ]
 }

@@ -21,8 +21,8 @@ Go言語とEchoフレームワークを使用したリアルタイムWebhookサ�
 ```
 demo/
 ├── api/
-│   ├── index.go     # ローカル実行用メインファイル (package main)
 │   └── handler.go   # Vercel Function (package handler)
+├── main.go          # ローカル実行用メインファイル (package main)
 ├── go.mod           # Go モジュール設定
 ├── vercel.json      # Vercel設定ファイル
 └── README.md        # このファイル
@@ -38,11 +38,11 @@ go mod tidy
 
 ### 2. ローカルサーバーの起動
 
-`api/index.go` を直接実行してローカルサーバーを起動します：
+`main.go` を直接実行してローカルサーバーを起動します：
 
 ```bash
 # ローカルサーバー起動
-go run api/index.go
+go run main.go
 ```
 
 ### 3. ローカル環境でのテスト
