@@ -29,6 +29,17 @@ func GetStatus(c echo.Context) error {
 	return c.Render(http.StatusOK, "index", data)
 }
 
+// Polling用のAPI - 現在のメッセージを返す
+func GetMessage(c echo.Context) error {
+	mu.RLock()
+	currentMessage := message
+	mu.RUnlock()
+
+	return c.JSON(http.StatusOK, map[string]string{
+		"message": currentMessage,
+	})
+}
+
 func SSEHandler(c echo.Context) error {
 	w := c.Response()
 	w.Header().Set("Content-Type", "text/event-stream")
