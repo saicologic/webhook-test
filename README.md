@@ -22,9 +22,9 @@ Go言語とEchoフレームワークを使用したリアルタイムWebhookサ�
 demo/
 ├── api/
 │   └── handler.go     # Vercel Function エントリーポイント (package handler)
-├── internal/
-│   ├── handlers.go    # 共通ハンドラー関数 (package internal)
-│   └── template.go    # テンプレートエンジン設定 (package internal)
+├── pkg/
+│   ├── handlers.go    # 共通ハンドラー関数 (package pkg)
+│   └── template.go    # テンプレートエンジン設定 (package pkg)
 ├── templates/
 │   └── index.html     # HTMLテンプレート
 ├── main.go            # ローカル実行用メインファイル (package main)
