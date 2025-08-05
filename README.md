@@ -8,6 +8,7 @@ Go言語とEchoフレームワークを使用したリアルタイムWebhookサ�
 - POST `/webhook` でメッセージを受信
 - Server-Sent Events (SSE) でリアルタイム更新
 - ローカル開発とVercelデプロイに対応
+- `go:embed`によるテンプレートファイル埋め込み
 
 ## 技術スタック
 
@@ -15,22 +16,23 @@ Go言語とEchoフレームワークを使用したリアルタイムWebhookサ�
 - **フレームワーク**: Echo v4
 - **デプロイ**: Vercel
 - **リアルタイム通信**: Server-Sent Events (SSE)
+- **テンプレート**: html/template + go:embed
 
 ## プロジェクト構成
 
 ```
 demo/
 ├── api/
-│   └── handler.go     # Vercel Function エントリーポイント (package handler)
+│   └── handler.go        # Vercel Function エントリーポイント (package handler)
 ├── pkg/
-│   ├── handlers.go    # 共通ハンドラー関数 (package pkg)
-│   └── template.go    # テンプレートエンジン設定 (package pkg)
-├── templates/
-│   └── index.html     # HTMLテンプレート
-├── main.go            # ローカル実行用メインファイル (package main)
-├── go.mod             # Go モジュール設定
-├── vercel.json        # Vercel設定ファイル
-└── README.md          # このファイル
+│   ├── handlers.go       # 共通ハンドラー関数 (package pkg)
+│   ├── template.go       # テンプレートエンジン設定 + go:embed (package pkg)
+│   └── templates/
+│       └── index.html    # HTMLテンプレート (go:embedで埋め込み)
+├── main.go               # ローカル実行用メインファイル (package main)
+├── go.mod                # Go モジュール設定
+├── vercel.json           # Vercel設定ファイル
+└── README.md             # このファイル
 ```
 
 ## ローカル環境での実行
@@ -136,15 +138,22 @@ curl -X POST $VERCEL_URL/webhook \
 ### GET `/`
 - ブラウザ表示用のHTMLページ
 - 現在のメッセージとSSE接続を含む
+- `go:embed`で埋め込まれたHTMLテンプレートを使用
+
+### GET `/message`
+- Polling用APIエンドポイント
+- 現在のメッセージをJSON形式で返す
+- レスポンス: `{"message": "現在のメッセージ"}`
 
 ### GET `/events`
 - Server-Sent Events エンドポイント
-- リアルタイム通信用
+- リアルタイム通信用（主にローカル環境）
 
 ### POST `/webhook`
 - メッセージ受信エンドポイント
 - パラメータ: `message` (string)
 - 対応形式: JSON, form-data
+- SSEクライアントにリアルタイムでブロードキャスト
 
 ## トラブルシューティング
 
@@ -156,8 +165,26 @@ curl -X POST $VERCEL_URL/webhook \
 - デプロイエラーの場合は、`vercel.json` の設定を確認
 - ログは Vercel ダッシュボードで確認可能
 
+## 技術的な特徴
+
+### go:embed による静的ファイル埋め込み
+- HTMLテンプレートをバイナリに埋め込み
+- Vercelでのファイルパス問題を解決
+- シングルバイナリでの配布が可能
+
+### 環境別リアルタイム通信
+- **ローカル環境**: Server-Sent Events (SSE) でリアルタイム更新
+- **Vercel環境**: SSE + フォールバック機能
+- 両環境で一貫したユーザー体験
+
+### パッケージ構成
+- `pkg`パッケージで共通コードを管理
+- Vercelの`internal`パッケージ制限を回避
+- ローカルとVercelで同じビジネスロジックを共有
+
 ## 開発メモ
 
 - SSEは長時間接続のため、Vercelの実行時間制限に注意
 - 本番環境では適切なCORS設定を推奨
 - メッセージはメモリ内保存のため、サーバー再起動で初期化される
+- `go:embed`を使用しているため、テンプレート変更時は再ビルドが必要
