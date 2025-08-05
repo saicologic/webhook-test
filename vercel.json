@@ -1,9 +1,22 @@
 {
   "version": 2,
-  "builds": [
+  "functions": {
+    "api/handler.go": {
+      "runtime": "@vercel/go"
+    }
+  },
+  "rewrites": [
     {
-      "src": "main.go",
-      "use": "@vercel/go"
+      "source": "/",
+      "destination": "/api/handler"
+    },
+    {
+      "source": "/events",
+      "destination": "/api/handler/events"
+    },
+    {
+      "source": "/webhook",
+      "destination": "/api/handler/webhook"
     }
   ]
 }
