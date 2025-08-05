@@ -21,7 +21,9 @@ Go言語とEchoフレームワークを使用したリアルタイムWebhookサ�
 ```
 demo/
 ├── api/
-│   └── handler.go   # Vercel Function (package handler)
+│   └── handler.go   # Vercel Function エントリーポイント (package handler)
+├── internal/
+│   └── handlers.go  # 共通ハンドラー関数 (package internal)
 ├── main.go          # ローカル実行用メインファイル (package main)
 ├── go.mod           # Go モジュール設定
 ├── vercel.json      # Vercel設定ファイル
